@@ -1,4 +1,4 @@
-#API used:Openweathermap.org,NOAA Api
+#API used:Openweathermap.org
 
 import math
 import requests
@@ -14,6 +14,36 @@ longitude = -71.175589
 
 stop_event = threading.Event()  # Event to signal termination
 print_queue = queue.Queue()  # Queue for printing data
+
+def logo(stdscr):
+    curses.cbreak()
+    curses.noecho()
+    stdscr.keypad(True)
+    stdscr.clear()
+
+    screen_height,screen_width = stdscr.getmaxyx()
+
+    # ASCII art for the logo
+    logo_art = [
+        "░██╗░░░░░░░██╗░█████╗░██████╗░░█████╗░",
+        "░██║░░██╗░░██║██╔══██╗██╔══██╗██╔══██╗",
+        "░╚██╗████╗██╔╝██║░░██║██████╔╝██║░░██║",
+        "░░████╔═████║░██║░░██║██╔══██╗██║░░██║",
+        "░░╚██╔╝░╚██╔╝░╚█████╔╝██║░░██║╚█████╔╝",
+        "░░░╚═╝░░░╚═╝░░░╚════╝░╚═╝░░╚═╝░╚════╝░",
+    ]
+
+    # Calculate center position for the logo
+    start_row = max(0, screen_height // 2 - len(logo_art) // 2)
+    start_col = max(0, screen_width // 2 - len(logo_art[0]) // 2)
+
+    # Display the logo at the center
+    for row, line in enumerate(logo_art, start=start_row):
+        stdscr.addstr(row, start_col, line)
+    
+    # Refresh the screen
+    stdscr.refresh()
+    curses.napms(3000)
 
 def fetch_wind_data():
     while not stop_event.is_set():
@@ -101,6 +131,8 @@ def main(stdscr):
     curses.cbreak()
     curses.noecho()
     stdscr.keypad(True)
+    stdscr.clear() 
+
     wind_speed = 0.0
     # Define the precise_round function
     def precise_round(value):
@@ -186,6 +218,8 @@ def main(stdscr):
         curses.nocbreak()
         stdscr.keypad(False)
         curses.echo()
+
+curses.wrapper(logo)
 
 curses.wrapper(main)
 

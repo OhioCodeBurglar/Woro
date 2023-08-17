@@ -43,7 +43,7 @@ def logo(stdscr):
     
     # Refresh the screen
     stdscr.refresh()
-    curses.napms(3000)
+    curses.napms(4200)
 
 def fetch_wind_data():
     while not stop_event.is_set():
@@ -61,7 +61,6 @@ def fetch_wind_data():
         time.sleep(5)  # Wait for 5 seconds before fetching data again
 
 def waveHeight(wind_speed):
-    
     # Calculate the fetch distance
     if wind_speed != 0:
         fetch_distance = 3000 / (wind_speed ** 2)
@@ -69,6 +68,7 @@ def waveHeight(wind_speed):
         return 0
     # Calculate wave height using the fetch distance
     wave_height = 0.01 * (wind_speed ** 2) * fetch_distance ** 0.5
+    wave_height /= 1.5
     wave_height = round(wave_height,2)
     return wave_height
 
@@ -126,6 +126,22 @@ def estimate_wind(wind_speed, wind_direction):
 
     return wind_label, direction_label
 
+def get_ocean(latitude, longitude):
+    if 20 < longitude <= 180:
+        if latitude > 0:
+            return "North Atlantic Ocean"
+        else:
+            return "South Atlantic Ocean"
+    elif -30 < longitude <= 20:
+        return "Indian Ocean"
+    elif -120 < longitude <= -30:
+        if latitude > 0:
+            return "North Pacific Ocean"
+        else:
+            return "South Pacific Ocean"
+    else:
+        return "Unknown"
+
 def main(stdscr):
     global latitude, longitude
     curses.cbreak()
@@ -149,6 +165,7 @@ def main(stdscr):
 
     # Define a dictionary to map key presses to velocity changes
     key_velocity_mapping = {
+        ord('h'): (0.0,0.0), #anchored
         ord('j'): (0.308333, 0.0),   # East
         ord('g'): (-0.308333, 0.0),  # West
         ord('y'): (0.0, 0.308333),   # North
@@ -181,7 +198,7 @@ def main(stdscr):
             
             # Define the direction text
             direction_text = {
-                (0, 0): 'stopped',
+                (0, 0): 'anchored',
                 (1, 0): 'going east',
                 (-1, 0): 'going west',
                 (0, 1): 'going north',
@@ -192,22 +209,26 @@ def main(stdscr):
                 (-1, -1): 'going southwest'
             }
             wave_height = waveHeight(wind_speed)
+            ocean = get_ocean(longitude,latitude)
+            visual_velocity = (round(velocity[0],2),round(velocity[1],2))
             stdscr.addstr(2, 0, direction_text[rounded_velocity])
-            stdscr.addstr(3, 0, f"x velocity: {velocity[0]}")
-            stdscr.addstr(4, 0, f"y velocity: {velocity[1]}")
+            stdscr.addstr(3, 0, f"x velocity: {visual_velocity[0]}")
+            stdscr.addstr(4, 0, f"y velocity: {visual_velocity[1]}")
             stdscr.addstr(5,0, '----------------------------------')
             stdscr.addstr(6,0, f"average wave height:{wave_height}m")
+            stdscr.addstr(7,0, f"Current Ocean: {ocean}")
             stdscr.refresh()
 
 
             # Check for user input
             key = stdscr.getch()
-            if key in key_velocity_mapping:
-                velocity = key_velocity_mapping[key]
             if key == ord('q'):
                 stop_event.set()  # Signal the other thread to terminate
                 wind_thread.join()  # Wait for the wind thread to finish before exiting
                 break
+            elif key in key_velocity_mapping:
+                velocity = key_velocity_mapping[key]
+            
 
             time.sleep(1)  # Allow some time for the other thread to print data
 
